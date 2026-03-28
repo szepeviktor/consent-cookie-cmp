@@ -77,6 +77,7 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
 - `data-gtag-ids`
   - Comma-separated standalone Google tag IDs for `gtag.js` (for example `G-AAAAAAAAAA,AW-BBBBBBBBBB,DC-CCCCCCCCC`).
   - Use this when one consent-controlled Google tag setup should configure multiple destinations.
+  - If both `data-gtag-id` and `data-gtag-ids` are present, the bootstrap combines them and de-duplicates repeated IDs.
 - `data-clarity-project-id`
   - Microsoft Clarity project ID.
 - `data-layer-name`

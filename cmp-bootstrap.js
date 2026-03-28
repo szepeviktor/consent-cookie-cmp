@@ -17,6 +17,7 @@
     var SERVICE_DATA_ATTRIBUTES = {
         gtm: 'data-gtm-id',
         gtag: 'data-gtag-id',
+        // data-gtag-ids is parsed separately because it supports comma-separated values.
         clarity: 'data-clarity-project-id',
         metaPixel: 'data-meta-pixel-id',
         linkedinInsightTag: 'data-linkedin-partner-id',
@@ -782,7 +783,6 @@
         var dataLayerName = options.dataLayerName || 'dataLayer';
         var hasLoaded = false;
         var hasConfigured = false;
-        var index;
 
         function load() {
             var scriptElement;
@@ -807,13 +807,15 @@
         }
 
         function configure() {
+            var idIndex;
+
             if (hasConfigured) {
                 return;
             }
 
             ensureGoogleTagRuntime(dataLayerName);
-            for (index = 0; index < gtagIds.length; index += 1) {
-                window.gtag('config', gtagIds[index]);
+            for (idIndex = 0; idIndex < gtagIds.length; idIndex += 1) {
+                window.gtag('config', gtagIds[idIndex]);
             }
             hasConfigured = true;
         }
