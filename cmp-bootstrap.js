@@ -982,6 +982,16 @@
             return /^\d+$/.test(value) ? value + 'px' : value;
         }
 
+        function getIframeSource(iframe) {
+            if (!iframe || iframe.tagName !== 'IFRAME') {
+                return null;
+            }
+
+            return iframe.getAttribute('data-cmp-src')
+                || iframe.getAttribute('data-src')
+                || iframe.getAttribute('src');
+        }
+
         function parseYouTubeUrl(src) {
             var url;
             var match;
@@ -1129,7 +1139,7 @@
                 return;
             }
 
-            parsed = parseYouTubeUrl(iframe.getAttribute('src'));
+            parsed = parseYouTubeUrl(getIframeSource(iframe));
 
             if (!parsed) {
                 return;

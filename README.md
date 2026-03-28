@@ -7,7 +7,7 @@ A lightweight Klaro-based JavaScript consent manager with modular, consent-gated
 - Static hosting for the CMP assets and configuration files.
 - A browser with ES5-compatible JavaScript support.
 - A Klaro configuration that defines the services used by the bootstrap.
-- If you use YouTube blocking, the page must contain normal YouTube embed iframes; the bootstrap will replace them with consent-gated placeholders.
+- If you use YouTube blocking, prefer an inert YouTube iframe with no `src`; keep the embed URL in `data-cmp-src` so the browser cannot start the YouTube embed before consent.
 
 The current standalone setup expects these Klaro services in `klaro-config.js`:
 
@@ -111,6 +111,7 @@ Behavior by integration:
   - On revoke, Klaro clears TikTok cookies and the bootstrap clears TikTok session storage keys.
 - YouTube
   - Existing YouTube iframes are replaced with placeholders before consent.
+  - Preferred markup is an `iframe` without `src`, using `data-cmp-src` or `data-src` for the embed URL.
   - After consent, embeds are recreated on `youtube-nocookie.com`.
   - On revoke, embeds are removed and placeholders are restored.
 
@@ -135,4 +136,19 @@ Typical page flow:
   - include `klaro-config.js`
   - include `klaro.js` with `defer`
 
-To add YouTube consent blocking, place a normal YouTube embed iframe in the HTML. The bootstrap handles the placeholder and consent-gated restore automatically.
+To add YouTube consent blocking, place an inert YouTube iframe in the HTML and move the embed URL into `data-cmp-src`. Omitting `src` on an `iframe` is valid HTML5, and it avoids the browser starting a third-party request before the CMP can intervene.
+
+```html
+<iframe
+    width="560"
+    height="315"
+    data-cmp-src="https://www.youtube-nocookie.com/embed/mqOsJBjN_rc?rel=0"
+    title="Sample YouTube embed"
+    loading="lazy"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowfullscreen
+></iframe>
+```
+
+The bootstrap also accepts `data-src` for compatibility, and still supports legacy live `src` embeds, but that older pattern is not privacy-safe because the browser may fetch YouTube before the placeholder swap happens.
