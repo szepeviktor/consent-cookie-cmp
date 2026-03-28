@@ -5,7 +5,7 @@
 
 .cmp-cookie-settings-trigger {
     position: fixed;
-    right: calc(20px + env(safe-area-inset-right, 0px));
+    left: calc(20px + env(safe-area-inset-left, 0px));
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     z-index: 980;
     width: 64px;
@@ -172,7 +172,7 @@ main {
 
 @media (max-width: 700px) {
     .cmp-cookie-settings-trigger {
-        right: calc(16px + env(safe-area-inset-right, 0px));
+        left: calc(16px + env(safe-area-inset-left, 0px));
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         width: 58px;
         height: 58px;
