@@ -51,12 +51,68 @@
         return null;
     }
 
+    function trimString(value) {
+        return value.replace(/^\s+|\s+$/g, '');
+    }
+
+    function parseAttributeList(value) {
+        var values = [];
+        var parts;
+        var index;
+        var part;
+
+        if (typeof value !== 'string') {
+            return values;
+        }
+
+        parts = value.split(',');
+        for (index = 0; index < parts.length; index += 1) {
+            part = trimString(parts[index]);
+            if (part) {
+                values.push(part);
+            }
+        }
+
+        return values;
+    }
+
+    function buildUniqueIdList(primaryValue, values) {
+        var ids = [];
+        var seen = Object.create(null);
+        var index;
+        var value;
+
+        function addId(id) {
+            if (typeof id !== 'string') {
+                return;
+            }
+
+            id = trimString(id);
+            if (!id || seen[id]) {
+                return;
+            }
+
+            seen[id] = true;
+            ids.push(id);
+        }
+
+        addId(primaryValue);
+
+        for (index = 0; values && index < values.length; index += 1) {
+            value = values[index];
+            addId(value);
+        }
+
+        return ids;
+    }
+
     function getBootstrapOptions(script) {
         var options = {
             settingsButtonMode: script ? script.getAttribute('data-settings-button') : null,
             dataLayerName: script ? script.getAttribute('data-layer-name') : null,
             hotjarVersion: script ? script.getAttribute('data-hotjar-version') : null,
-            youtubeConsentTargetName: script ? script.getAttribute('data-youtube-service') : null
+            youtubeConsentTargetName: script ? script.getAttribute('data-youtube-service') : null,
+            gtagIds: parseAttributeList(script ? script.getAttribute('data-gtag-ids') : null)
         };
         var serviceKey;
         var serviceName;
@@ -71,6 +127,10 @@
             }
 
             options[optionName] = script ? script.getAttribute(SERVICE_DATA_ATTRIBUTES[serviceKey]) : null;
+        }
+
+        if (options.gtagId === null && options.gtagIds.length > 0) {
+            options.gtagId = options.gtagIds[0];
         }
 
         return options;
@@ -717,15 +777,17 @@
 
     function createGtagVendor(options) {
         var serviceName = SERVICE_NAMES.gtag;
-        var gtagId = options.gtagId;
+        var gtagIds = buildUniqueIdList(options.gtagId, options.gtagIds);
+        var gtagId = gtagIds.length > 0 ? gtagIds[0] : null;
         var dataLayerName = options.dataLayerName || 'dataLayer';
         var hasLoaded = false;
         var hasConfigured = false;
+        var index;
 
         function load() {
             var scriptElement;
 
-            if (hasLoaded) {
+            if (hasLoaded || gtagId === null) {
                 return;
             }
 
@@ -750,7 +812,9 @@
             }
 
             ensureGoogleTagRuntime(dataLayerName);
-            window.gtag('config', gtagId);
+            for (index = 0; index < gtagIds.length; index += 1) {
+                window.gtag('config', gtagIds[index]);
+            }
             hasConfigured = true;
         }
 
@@ -1547,6 +1611,7 @@
         var dataLayerName = options ? options.dataLayerName : null;
         var gtmId = options ? options.gtmId : null;
         var gtagId = options ? options.gtagId : null;
+        var gtagIds = options ? options.gtagIds : null;
         var clarityProjectId = options ? options.clarityProjectId : null;
         var metaPixelId = options ? options.metaPixelId : null;
         var linkedinPartnerId = options ? options.linkedinPartnerId : null;
@@ -1563,9 +1628,10 @@
             }));
         }
 
-        if (gtagId !== null) {
+        if (gtagId !== null || (gtagIds && gtagIds.length > 0)) {
             registry.register(createGtagVendor({
                 gtagId: gtagId,
+                gtagIds: gtagIds,
                 dataLayerName: dataLayerName || 'dataLayer'
             }));
         }
