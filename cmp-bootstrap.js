@@ -4,6 +4,7 @@
 
     var SERVICE_NAMES = {
         gtm: 'google-tag-manager',
+        clarity: 'microsoft-clarity',
         metaPixel: 'meta-pixel',
         linkedinInsightTag: 'linkedin-insight-tag',
         pinterestTag: 'pinterest-tag',
@@ -615,6 +616,67 @@
             revoke: function () {
                 if (hasInitialized && typeof window.fbq === 'function') {
                     window.fbq('consent', 'revoke');
+                }
+            }
+        });
+    }
+
+    function createClarityVendor(options) {
+        var serviceName = SERVICE_NAMES.clarity;
+        var projectId = options.projectId;
+        var hasLoaded = false;
+
+        function ensureRuntime() {
+            if (typeof window.clarity === 'function') {
+                return;
+            }
+
+            window.clarity = function () {
+                (window.clarity.q = window.clarity.q || []).push(arguments);
+            };
+        }
+
+        function updateConsent(consent) {
+            if (typeof window.clarity !== 'function') {
+                return;
+            }
+
+            window.clarity('consentv2', {
+                ad_Storage: 'denied',
+                analytics_Storage: consent ? 'granted' : 'denied'
+            });
+
+            if (!consent) {
+                window.clarity('consent', false);
+            }
+        }
+
+        function load() {
+            var scriptElement;
+
+            if (hasLoaded) {
+                return;
+            }
+
+            ensureRuntime();
+
+            scriptElement = document.createElement('script');
+            scriptElement.async = true;
+            scriptElement.src = 'https://www.clarity.ms/tag/' + encodeURIComponent(projectId);
+
+            if (insertScript(scriptElement)) {
+                hasLoaded = true;
+            }
+        }
+
+        return createConsentAwareVendor(serviceName, {
+            grant: function () {
+                load();
+                updateConsent(true);
+            },
+            revoke: function () {
+                if (hasLoaded) {
+                    updateConsent(false);
                 }
             }
         });
@@ -1250,6 +1312,7 @@
         var registry = createVendorRegistry();
         var dataLayerName = script ? script.getAttribute('data-layer-name') : null;
         var gtmId = script ? script.getAttribute('data-gtm-id') : null;
+        var clarityProjectId = script ? script.getAttribute('data-clarity-project-id') : null;
         var metaPixelId = script ? script.getAttribute('data-meta-pixel-id') : null;
         var linkedinPartnerId = script ? script.getAttribute('data-linkedin-partner-id') : null;
         var pinterestTagId = script ? script.getAttribute('data-pinterest-tag-id') : null;
@@ -1262,6 +1325,12 @@
             registry.register(createGtmVendor({
                 gtmId: gtmId,
                 dataLayerName: dataLayerName || 'dataLayer'
+            }));
+        }
+
+        if (clarityProjectId !== null) {
+            registry.register(createClarityVendor({
+                projectId: clarityProjectId
             }));
         }
 

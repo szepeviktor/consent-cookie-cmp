@@ -13,6 +13,7 @@ The current standalone setup expects these Klaro services in `klaro-config.js`:
 
 - `klaro`
 - `google-tag-manager`
+- `microsoft-clarity`
 - `hotjar`
 - `meta-pixel`
 - `linkedin-insight-tag`
@@ -40,6 +41,7 @@ At the top of the page, inside `<head>`:
 <script
     src="/cmp/cmp-bootstrap.js"
     data-gtm-id="GTM-XXXXXXX"
+    data-clarity-project-id="abcdefghij"
     data-hotjar-id="1234567"
     data-hotjar-version="6"
     data-meta-pixel-id="123456789012345"
@@ -66,6 +68,8 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
 
 - `data-gtm-id`
   - Google Tag Manager container ID.
+- `data-clarity-project-id`
+  - Microsoft Clarity project ID.
 - `data-layer-name`
   - Optional custom dataLayer name for GTM. Default: `dataLayer`.
 - `data-hotjar-id`
@@ -92,6 +96,9 @@ Behavior by integration:
 - Google Tag Manager
   - Loads only after consent.
   - On revoke, stays loaded but receives denied Consent Mode updates.
+- Microsoft Clarity
+  - Loads only after consent.
+  - On revoke, stays loaded, switches to denied `consentv2` state, and clears Clarity cookies for the current site.
 - Hotjar
   - Loads only after consent.
   - On revoke, client-side Hotjar storage cleanup runs where possible.
@@ -116,6 +123,7 @@ Behavior by integration:
   - On revoke, embeds are removed and placeholders are restored.
 
 Your `klaro-config.js` should also define cookie cleanup lists for the services you enable, so consent revoke removes their first-party cookies.
+For Microsoft Clarity, include `_clck` and `_clsk`.
 
 ## Usage
 
@@ -142,7 +150,7 @@ To add YouTube consent blocking, place an inert YouTube iframe in the HTML and m
 <iframe
     width="560"
     height="315"
-    data-cmp-src="https://www.youtube-nocookie.com/embed/mqOsJBjN_rc?rel=0"
+    data-cmp-src="https://www.youtube-nocookie.com/embed/LgKwD3MYNH8?rel=0"
     title="Sample YouTube embed"
     loading="lazy"
     referrerpolicy="strict-origin-when-cross-origin"
