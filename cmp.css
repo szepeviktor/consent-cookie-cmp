@@ -1,0 +1,189 @@
+.klaro .cookie-notice {
+    --notice-right: auto;
+    --notice-left: 20px;
+}
+
+.cmp-cookie-settings-trigger {
+    position: fixed;
+    right: calc(20px + env(safe-area-inset-right, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 980;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: #1f2937;
+    display: inline-grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+}
+
+.cmp-cookie-settings-trigger:hover {
+    transform: translateY(-1px);
+    background: #111827;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.cmp-cookie-settings-trigger:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 3px;
+}
+
+.cmp-cookie-settings-trigger-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+}
+
+.cmp-cookie-settings-icon {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #d6a86a;
+    box-shadow:
+        inset -4px -4px 0 rgba(0, 0, 0, 0.08),
+        inset 3px 3px 0 rgba(255, 255, 255, 0.18);
+}
+
+.cmp-cookie-settings-icon::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    background: #1f2937;
+    border-radius: 50%;
+    box-shadow:
+        -4px 3px 0 -1px #1f2937,
+        -1px 7px 0 -2px #1f2937;
+}
+
+.cmp-cookie-settings-icon::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 6px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #5b3a29;
+    box-shadow:
+        8px 2px 0 #5b3a29,
+        5px 10px 0 #5b3a29,
+        13px 8px 0 #5b3a29,
+        2px 14px 0 #5b3a29;
+}
+
+body {
+    margin: 0;
+    font-family: Georgia, serif;
+    background: #f4efe7;
+    color: #1d1f24;
+}
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+}
+
+.cmp-youtube-demo {
+    margin-top: 32px;
+}
+
+.cmp-youtube-demo iframe,
+.cmp-youtube-placeholder {
+    width: 100%;
+    max-width: 100%;
+    min-height: 315px;
+    border: 0;
+    border-radius: 18px;
+}
+
+.cmp-youtube-placeholder {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    padding: 0;
+    background-color: #1d1f24;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    box-shadow: 0 18px 50px rgba(26, 21, 14, 0.16);
+    cursor: pointer;
+    text-align: left;
+}
+
+.cmp-youtube-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 38%),
+        linear-gradient(180deg, rgba(14, 16, 21, 0.08), rgba(14, 16, 21, 0.78));
+}
+
+.cmp-youtube-placeholder-content {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    left: 24px;
+    z-index: 1;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.cmp-youtube-placeholder-copy {
+    display: grid;
+    gap: 8px;
+    max-width: 420px;
+    color: #fff9f2;
+}
+
+.cmp-youtube-placeholder-copy strong {
+    font-size: 1.2rem;
+    line-height: 1.2;
+}
+
+.cmp-youtube-placeholder-copy span {
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.cmp-youtube-placeholder-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 160px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: #fff9f2;
+    color: #1d1f24;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+@media (max-width: 700px) {
+    .cmp-cookie-settings-trigger {
+        right: calc(16px + env(safe-area-inset-right, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: 58px;
+        height: 58px;
+    }
+
+    .cmp-youtube-placeholder-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cmp-youtube-placeholder-button {
+        width: 100%;
+    }
+}
