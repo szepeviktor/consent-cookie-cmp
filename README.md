@@ -145,6 +145,32 @@ Typical page flow:
   - include `klaro-config.js`
   - include `klaro.js` with `defer`
 
+For arbitrary third-party scripts, use Klaro's built-in blocked-script markup instead of adding a new `data-*` attribute to `cmp-bootstrap.js`.
+Keep the script in your HTML, but convert it to the consent-gated form:
+
+```html
+<script
+    type="text/plain"
+    data-type="text/javascript"
+    data-name="custom-vendor"
+    data-src="https://example.com/vendor.js"
+></script>
+```
+
+`data-name` must match a Klaro service in `klaro-config.js`. Short example:
+
+```js
+{
+    name: 'custom-vendor',
+    title: 'Custom Vendor',
+    purposes: ['advertising'],
+    default: false,
+    required: false,
+    onlyOnce: true,
+    cookies: []
+}
+```
+
 To add YouTube consent blocking, place an inert YouTube iframe in the HTML and move the embed URL into `data-cmp-src`. Omitting `src` on an `iframe` is valid HTML5, and it avoids the browser starting a third-party request before the CMP can intervene.
 
 ```html
