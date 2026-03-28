@@ -130,7 +130,7 @@
             options[optionName] = script ? script.getAttribute(SERVICE_DATA_ATTRIBUTES[serviceKey]) : null;
         }
 
-        if (options.gtagId === null && options.gtagIds.length > 0) {
+        if (options.gtagId === null && options.gtagIds && options.gtagIds.length > 0) {
             options.gtagId = options.gtagIds[0];
         }
 
@@ -1613,7 +1613,7 @@
         var dataLayerName = options ? options.dataLayerName : null;
         var gtmId = options ? options.gtmId : null;
         var gtagId = options ? options.gtagId : null;
-        var gtagIds = options ? options.gtagIds : null;
+        var gtagIds = options && options.gtagIds ? options.gtagIds : [];
         var clarityProjectId = options ? options.clarityProjectId : null;
         var metaPixelId = options ? options.metaPixelId : null;
         var linkedinPartnerId = options ? options.linkedinPartnerId : null;
@@ -1630,7 +1630,7 @@
             }));
         }
 
-        if (gtagId !== null || (gtagIds && gtagIds.length > 0)) {
+        if (gtagId !== null || gtagIds.length > 0) {
             registry.register(createGtagVendor({
                 gtagId: gtagId,
                 gtagIds: gtagIds,
