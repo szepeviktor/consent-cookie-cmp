@@ -74,8 +74,13 @@
         return options;
     }
 
-    function isServiceEnabledFromOptions(serviceName, options) {
+    function isServiceEnabledFromOptions(service, options) {
         var optionName;
+        var serviceName = service && service.name;
+
+        if (service && service.required) {
+            return true;
+        }
 
         if (serviceName === 'klaro') {
             return true;
@@ -123,7 +128,7 @@
                     continue;
                 }
 
-                if (!isServiceEnabledFromOptions(service.name, context.options)) {
+                if (!isServiceEnabledFromOptions(service, context.options)) {
                     continue;
                 }
 

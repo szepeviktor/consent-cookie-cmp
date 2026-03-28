@@ -54,6 +54,7 @@
 ## Browser test checklist
 
 - Start from an empty cookie/storage state.
+- Inspect the modal service rows against the active `data-*` attributes.
 - Verify initial state:
   - no GTM globals
   - no Meta globals
