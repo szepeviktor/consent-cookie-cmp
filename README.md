@@ -1,6 +1,6 @@
 # consent-cookie-cmp
 
-A lightweight Klaro-based JavaScript consent manager with modular, consent-gated loading for analytics, marketing tags, and embedded media.
+A lightweight Klaro-based JavaScript consent manager with Google CMP compatibility and modular, consent-gated loading for analytics, marketing tags, and embedded media.
 
 ## Requirements
 
