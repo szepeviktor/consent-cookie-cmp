@@ -4,12 +4,7 @@ A lightweight Klaro-based JavaScript consent manager with modular, consent-gated
 
 ## Requirements
 
-- Static hosting for these files:
-  - `cmp-bootstrap.js`
-  - `cmp.css`
-  - `klaro-config.js`
-  - `klaro.css`
-  - `klaro.js`
+- Static hosting for the CMP assets and configuration files.
 - A browser with ES5-compatible JavaScript support.
 - A Klaro configuration that defines the services used by the bootstrap.
 - If you use YouTube blocking, the page must contain normal YouTube embed iframes; the bootstrap will replace them with consent-gated placeholders.
@@ -22,6 +17,7 @@ The current standalone setup expects these Klaro services in `klaro-config.js`:
 - `meta-pixel`
 - `linkedin-insight-tag`
 - `pinterest-tag`
+- `tiktok-pixel`
 - `youtube`
 
 ## Installation
@@ -49,6 +45,7 @@ At the top of the page, inside `<head>`:
     data-meta-pixel-id="123456789012345"
     data-linkedin-partner-id="1234567"
     data-pinterest-tag-id="1234567890123"
+    data-tiktok-pixel-id="ABC123DEF456GHI789JKL"
     data-youtube-service="advertising"
     data-settings-button="floating"
 ></script>
@@ -81,6 +78,8 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
   - LinkedIn Insight Tag partner ID.
 - `data-pinterest-tag-id`
   - Pinterest Tag ID.
+- `data-tiktok-pixel-id`
+  - TikTok Pixel ID.
 - `data-youtube-service`
   - Klaro service name or Klaro purpose/category name that controls YouTube embeds.
   - Example: `youtube` or `advertising`.
@@ -106,6 +105,10 @@ Behavior by integration:
 - Pinterest Tag
   - Loads only after consent.
   - Uses `pintrk('load', tagId)`, `pintrk('page')`, and `pintrk('setconsent', true|false)`.
+- TikTok Pixel
+  - Loads only after consent.
+  - Uses the standard `ttq` base code shape and fires `ttq.page()` after consent.
+  - On revoke, Klaro clears TikTok cookies and the bootstrap clears TikTok session storage keys.
 - YouTube
   - Existing YouTube iframes are replaced with placeholders before consent.
   - After consent, embeds are recreated on `youtube-nocookie.com`.

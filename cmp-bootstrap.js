@@ -7,6 +7,7 @@
         metaPixel: 'meta-pixel',
         linkedinInsightTag: 'linkedin-insight-tag',
         pinterestTag: 'pinterest-tag',
+        tiktokPixel: 'tiktok-pixel',
         hotjar: 'hotjar',
         youtube: 'youtube'
     };
@@ -745,6 +746,133 @@
         });
     }
 
+    function createTikTokPixelVendor(options) {
+        var serviceName = SERVICE_NAMES.tiktokPixel;
+        var pixelId = options.pixelId;
+        var hasLoaded = false;
+
+        function clearStorage(storage, key) {
+            if (!storage || typeof storage.removeItem !== 'function') {
+                return;
+            }
+
+            try {
+                storage.removeItem(key);
+            } catch (error) {
+            }
+        }
+
+        function ensureRuntime() {
+            var ttq;
+            var methods;
+            var index;
+
+            if (window.ttq && typeof window.ttq.load === 'function' && typeof window.ttq.instance === 'function') {
+                return;
+            }
+
+            methods = [
+                'page',
+                'track',
+                'identify',
+                'instances',
+                'debug',
+                'on',
+                'off',
+                'once',
+                'ready',
+                'alias',
+                'group',
+                'enableCookie',
+                'disableCookie'
+            ];
+
+            window.TiktokAnalyticsObject = 'ttq';
+            ttq = window.ttq = window.ttq || [];
+            ttq.methods = methods;
+            ttq.setAndDefer = function (target, methodName) {
+                target[methodName] = function () {
+                    target.push([methodName].concat(Array.prototype.slice.call(arguments, 0)));
+                };
+            };
+
+            for (index = 0; index < methods.length; index++) {
+                ttq.setAndDefer(ttq, methods[index]);
+            }
+
+            ttq.instance = function (instanceId) {
+                var instance = ttq._i[instanceId] || [];
+                var methodIndex;
+
+                for (methodIndex = 0; methodIndex < methods.length; methodIndex++) {
+                    ttq.setAndDefer(instance, methods[methodIndex]);
+                }
+
+                return instance;
+            };
+
+            ttq.load = function (instanceId, config) {
+                var scriptElement;
+                var firstScript;
+                var baseUrl = 'https://analytics.tiktok.com/i18n/pixel/events.js';
+
+                ttq._i = ttq._i || {};
+                ttq._i[instanceId] = ttq._i[instanceId] || [];
+                ttq._i[instanceId]._u = baseUrl;
+                ttq._t = ttq._t || {};
+                ttq._t[instanceId] = +new Date();
+                ttq._o = ttq._o || {};
+                ttq._o[instanceId] = config || {};
+
+                scriptElement = document.createElement('script');
+                scriptElement.type = 'text/javascript';
+                scriptElement.async = true;
+                scriptElement.src = baseUrl
+                    + '?sdkid='
+                    + encodeURIComponent(instanceId)
+                    + '&lib=ttq';
+
+                firstScript = document.getElementsByTagName('script')[0];
+
+                if (firstScript && firstScript.parentNode) {
+                    firstScript.parentNode.insertBefore(scriptElement, firstScript);
+                    return;
+                }
+
+                if (document.head) {
+                    document.head.appendChild(scriptElement);
+                }
+            };
+        }
+
+        function load() {
+            if (hasLoaded) {
+                return;
+            }
+
+            ensureRuntime();
+            if (window.ttq && typeof window.ttq.load === 'function') {
+                window.ttq.load(pixelId);
+                hasLoaded = true;
+            }
+        }
+
+        return createConsentAwareVendor(serviceName, {
+            grant: function () {
+                load();
+
+                if (window.ttq && typeof window.ttq.page === 'function') {
+                    window.ttq.page();
+                }
+            },
+            revoke: function () {
+                clearStorage(window.sessionStorage, 'tt_pixel_session_index');
+                clearStorage(window.sessionStorage, 'tt_appInfo');
+                clearStorage(window.sessionStorage, 'tt_sessionId');
+            }
+        });
+    }
+
     function createHotjarVendor(options) {
         var serviceName = SERVICE_NAMES.hotjar;
         var siteId = options.siteId;
@@ -1115,6 +1243,7 @@
         var metaPixelId = script ? script.getAttribute('data-meta-pixel-id') : null;
         var linkedinPartnerId = script ? script.getAttribute('data-linkedin-partner-id') : null;
         var pinterestTagId = script ? script.getAttribute('data-pinterest-tag-id') : null;
+        var tiktokPixelId = script ? script.getAttribute('data-tiktok-pixel-id') : null;
         var hotjarId = script ? script.getAttribute('data-hotjar-id') : null;
         var hotjarVersion = script ? script.getAttribute('data-hotjar-version') : null;
         var youtubeConsentTargetName = script ? script.getAttribute('data-youtube-service') : null;
@@ -1141,6 +1270,12 @@
         if (pinterestTagId !== null) {
             registry.register(createPinterestTagVendor({
                 tagId: pinterestTagId
+            }));
+        }
+
+        if (tiktokPixelId !== null) {
+            registry.register(createTikTokPixelVendor({
+                pixelId: tiktokPixelId
             }));
         }
 
