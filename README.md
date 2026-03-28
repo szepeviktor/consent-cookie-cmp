@@ -109,6 +109,7 @@ Behavior by integration:
 - LinkedIn Insight Tag
   - Loads only after consent.
   - On revoke, `li_adsid` is removed from local and session storage when present.
+  - LinkedIn does not provide a reliable runtime revoke API, so the safest revoke flow is to clear local state and reload the page.
 - Pinterest Tag
   - Loads only after consent.
   - Uses `pintrk('load', tagId)`, `pintrk('page')`, and `pintrk('setconsent', true|false)`.
