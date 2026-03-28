@@ -4,6 +4,7 @@
 
     var SERVICE_NAMES = {
         gtm: 'google-tag-manager',
+        gtag: 'google-tag',
         clarity: 'microsoft-clarity',
         metaPixel: 'meta-pixel',
         linkedinInsightTag: 'linkedin-insight-tag',
@@ -15,6 +16,7 @@
 
     var SERVICE_DATA_ATTRIBUTES = {
         gtm: 'data-gtm-id',
+        gtag: 'data-gtag-id',
         clarity: 'data-clarity-project-id',
         metaPixel: 'data-meta-pixel-id',
         linkedinInsightTag: 'data-linkedin-partner-id',
@@ -637,60 +639,61 @@
         return changed;
     }
 
+    function ensureGoogleTagRuntime(dataLayerName) {
+        window[dataLayerName] = window[dataLayerName] || [];
+
+        if (typeof window.gtag !== 'function') {
+            window.gtag = function () {
+                window[dataLayerName].push(arguments);
+            };
+        }
+    }
+
+    function buildGoogleConsentState(consent) {
+        return {
+            analytics_storage: consent ? 'granted' : 'denied',
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied'
+        };
+    }
+
+    function updateGoogleTagConsent(dataLayerName, consent) {
+        ensureGoogleTagRuntime(dataLayerName);
+        window.gtag('consent', 'update', buildGoogleConsentState(consent));
+    }
+
+    function buildGoogleDataLayerParam(dataLayerName) {
+        return dataLayerName !== 'dataLayer'
+            ? '&l=' + encodeURIComponent(dataLayerName)
+            : '';
+    }
+
     function createGtmVendor(options) {
         var serviceName = SERVICE_NAMES.gtm;
         var gtmId = options.gtmId;
         var dataLayerName = options.dataLayerName || 'dataLayer';
         var hasLoaded = false;
 
-        function ensureRuntime() {
-            window[dataLayerName] = window[dataLayerName] || [];
-
-            if (typeof window.gtag !== 'function') {
-                window.gtag = function () {
-                    window[dataLayerName].push(arguments);
-                };
-            }
-        }
-
-        function buildConsentState(consent) {
-            return {
-                analytics_storage: consent ? 'granted' : 'denied',
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
-            };
-        }
-
-        function updateConsent(consent) {
-            ensureRuntime();
-            window.gtag('consent', 'update', buildConsentState(consent));
-        }
-
         function load() {
-            var dlParam;
             var scriptElement;
 
             if (hasLoaded) {
                 return;
             }
 
-            ensureRuntime();
-            window.gtag('consent', 'default', buildConsentState(false));
+            ensureGoogleTagRuntime(dataLayerName);
+            window.gtag('consent', 'default', buildGoogleConsentState(false));
             window[dataLayerName].push({
                 'gtm.start': new Date().getTime(),
                 event: 'gtm.js'
             });
 
-            dlParam = dataLayerName !== 'dataLayer'
-                ? '&l=' + encodeURIComponent(dataLayerName)
-                : '';
-
             scriptElement = document.createElement('script');
             scriptElement.async = true;
             scriptElement.src = 'https://www.googletagmanager.com/gtm.js?id='
                 + encodeURIComponent(gtmId)
-                + dlParam;
+                + buildGoogleDataLayerParam(dataLayerName);
 
             if (insertScript(scriptElement)) {
                 hasLoaded = true;
@@ -701,12 +704,67 @@
             grant: function () {
                 load();
                 if (hasLoaded) {
-                    updateConsent(true);
+                    updateGoogleTagConsent(dataLayerName, true);
                 }
             },
             revoke: function () {
                 if (hasLoaded) {
-                    updateConsent(false);
+                    updateGoogleTagConsent(dataLayerName, false);
+                }
+            }
+        });
+    }
+
+    function createGtagVendor(options) {
+        var serviceName = SERVICE_NAMES.gtag;
+        var gtagId = options.gtagId;
+        var dataLayerName = options.dataLayerName || 'dataLayer';
+        var hasLoaded = false;
+        var hasConfigured = false;
+
+        function load() {
+            var scriptElement;
+
+            if (hasLoaded) {
+                return;
+            }
+
+            ensureGoogleTagRuntime(dataLayerName);
+            window.gtag('consent', 'default', buildGoogleConsentState(false));
+            window.gtag('js', new Date());
+
+            scriptElement = document.createElement('script');
+            scriptElement.async = true;
+            scriptElement.src = 'https://www.googletagmanager.com/gtag/js?id='
+                + encodeURIComponent(gtagId)
+                + buildGoogleDataLayerParam(dataLayerName);
+
+            if (insertScript(scriptElement)) {
+                hasLoaded = true;
+            }
+        }
+
+        function configure() {
+            if (hasConfigured) {
+                return;
+            }
+
+            ensureGoogleTagRuntime(dataLayerName);
+            window.gtag('config', gtagId);
+            hasConfigured = true;
+        }
+
+        return createConsentAwareVendor(serviceName, {
+            grant: function () {
+                load();
+                if (hasLoaded) {
+                    updateGoogleTagConsent(dataLayerName, true);
+                    configure();
+                }
+            },
+            revoke: function () {
+                if (hasLoaded) {
+                    updateGoogleTagConsent(dataLayerName, false);
                 }
             }
         });
@@ -1488,6 +1546,7 @@
         var options = context ? context.options : null;
         var dataLayerName = options ? options.dataLayerName : null;
         var gtmId = options ? options.gtmId : null;
+        var gtagId = options ? options.gtagId : null;
         var clarityProjectId = options ? options.clarityProjectId : null;
         var metaPixelId = options ? options.metaPixelId : null;
         var linkedinPartnerId = options ? options.linkedinPartnerId : null;
@@ -1500,6 +1559,13 @@
         if (gtmId !== null) {
             registry.register(createGtmVendor({
                 gtmId: gtmId,
+                dataLayerName: dataLayerName || 'dataLayer'
+            }));
+        }
+
+        if (gtagId !== null) {
+            registry.register(createGtagVendor({
+                gtagId: gtagId,
                 dataLayerName: dataLayerName || 'dataLayer'
             }));
         }

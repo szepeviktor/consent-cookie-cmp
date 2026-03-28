@@ -19,7 +19,7 @@ window.klaroConfig = {
         hu: {
             consentNotice: {
                 title: 'Sütibeállítások',
-                description: 'Az oldal sütiket használ az alapműködéshez, analitikához és marketinghez. A Google Tag Manager, a Microsoft Clarity, a Hotjar, a Meta Pixel, a LinkedIn Insight Tag, a Pinterest Tag, a TikTok Pixel és a YouTube csak az engedélyezésed után töltődik be.'
+                description: 'Az oldal sütiket használ az alapműködéshez, analitikához és marketinghez. A Google Tag Manager, a Google tag, a Microsoft Clarity, a Hotjar, a Meta Pixel, a LinkedIn Insight Tag, a Pinterest Tag, a TikTok Pixel és a YouTube csak az engedélyezésed után töltődik be.'
             },
             consentModal: {
                 title: 'Adatvédelmi beállítások',
@@ -99,6 +99,27 @@ window.klaroConfig = {
                 hu: {
                     title: 'Google Tag Manager',
                     description: 'A Google Tag Manager az analitikai tagek kezelésére szolgál, és csak az engedélyezésed után töltődik be.'
+                }
+            }
+        },
+        {
+            name: 'google-tag',
+            title: 'Google tag',
+            purposes: ['analytics'],
+            default: false,
+            required: false,
+            optOut: false,
+            onlyOnce: true,
+            cookies: [
+                '_ga',
+                /^_ga_.*/,
+                '_gid',
+                /^_gat.*/
+            ],
+            translations: {
+                hu: {
+                    title: 'Google tag',
+                    description: 'A Google tag (gtag.js) analitikai mérésekhez használható, és csak az engedélyezésed után töltődik be.'
                 }
             }
         },

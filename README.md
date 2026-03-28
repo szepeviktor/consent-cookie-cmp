@@ -13,6 +13,7 @@ The current standalone setup expects these Klaro services in `klaro-config.js`:
 
 - `klaro`
 - `google-tag-manager`
+- `google-tag`
 - `microsoft-clarity`
 - `hotjar`
 - `meta-pixel`
@@ -41,6 +42,7 @@ At the top of the page, inside `<head>`:
 <script
     src="/cmp/cmp-bootstrap.js"
     data-gtm-id="GTM-XXXXXXX"
+    data-gtag-id="G-XXXXXXXXXX"
     data-clarity-project-id="abcdefghij"
     data-hotjar-id="1234567"
     data-hotjar-version="6"
@@ -62,16 +64,20 @@ At the bottom of the page, before `</body>`:
 
 `cmp-bootstrap.js` must be loaded before `klaro.js`, because the bootstrap reads its `data-*` attributes from the current script tag and then waits for Klaro to become available.
 
+Use `data-gtm-id` when you manage tags through Google Tag Manager, or `data-gtag-id` when you want to load standalone `gtag.js` without GTM.
+
 ## Configuration
 
 The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js` script tag.
 
 - `data-gtm-id`
   - Google Tag Manager container ID.
+- `data-gtag-id`
+  - Standalone Google tag ID for `gtag.js` (for example `G-XXXXXXXXXX`).
 - `data-clarity-project-id`
   - Microsoft Clarity project ID.
 - `data-layer-name`
-  - Optional custom dataLayer name for GTM. Default: `dataLayer`.
+  - Optional custom dataLayer name for GTM or `gtag.js`. Default: `dataLayer`.
 - `data-hotjar-id`
   - Hotjar site ID.
 - `data-hotjar-version`
@@ -95,6 +101,9 @@ Behavior by integration:
 
 - Google Tag Manager
   - Loads only after consent.
+  - On revoke, stays loaded but receives denied Consent Mode updates.
+- Google tag
+  - Loads `gtag.js` only after consent.
   - On revoke, stays loaded but receives denied Consent Mode updates.
 - Microsoft Clarity
   - Loads only after consent.
