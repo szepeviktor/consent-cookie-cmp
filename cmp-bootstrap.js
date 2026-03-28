@@ -13,6 +13,168 @@
         youtube: 'youtube'
     };
 
+    var SERVICE_DATA_ATTRIBUTES = {
+        gtm: 'data-gtm-id',
+        clarity: 'data-clarity-project-id',
+        metaPixel: 'data-meta-pixel-id',
+        linkedinInsightTag: 'data-linkedin-partner-id',
+        pinterestTag: 'data-pinterest-tag-id',
+        tiktokPixel: 'data-tiktok-pixel-id',
+        hotjar: 'data-hotjar-id'
+    };
+
+    function getServiceOptionName(serviceName) {
+        var serviceKey;
+
+        for (serviceKey in SERVICE_NAMES) {
+            if (SERVICE_NAMES[serviceKey] !== serviceName) {
+                continue;
+            }
+
+            if (serviceKey === 'youtube') {
+                return null;
+            }
+
+            if (serviceKey === 'clarity') {
+                return 'clarityProjectId';
+            }
+
+            if (serviceKey === 'linkedinInsightTag') {
+                return 'linkedinPartnerId';
+            }
+
+            return serviceKey + 'Id';
+        }
+
+        return null;
+    }
+
+    function getBootstrapOptions(script) {
+        var options = {
+            settingsButtonMode: script ? script.getAttribute('data-settings-button') : null,
+            dataLayerName: script ? script.getAttribute('data-layer-name') : null,
+            hotjarVersion: script ? script.getAttribute('data-hotjar-version') : null,
+            youtubeConsentTargetName: script ? script.getAttribute('data-youtube-service') : null
+        };
+        var serviceKey;
+        var serviceName;
+        var optionName;
+
+        for (serviceKey in SERVICE_DATA_ATTRIBUTES) {
+            serviceName = SERVICE_NAMES[serviceKey];
+            optionName = getServiceOptionName(serviceName);
+
+            if (!optionName) {
+                continue;
+            }
+
+            options[optionName] = script ? script.getAttribute(SERVICE_DATA_ATTRIBUTES[serviceKey]) : null;
+        }
+
+        return options;
+    }
+
+    function isServiceEnabledFromOptions(serviceName, options) {
+        var optionName;
+
+        if (serviceName === 'klaro') {
+            return true;
+        }
+
+        if (!options) {
+            return false;
+        }
+
+        optionName = getServiceOptionName(serviceName);
+        return !!optionName && options[optionName] !== null;
+    }
+
+    function installKlaroConfigFilter(script, context) {
+        var currentConfig = window.klaroConfig;
+
+        function applyFilter(config) {
+            var filteredServices = [];
+            var requestedTargetName;
+            var youtubeService = null;
+            var hasMatchingService = false;
+            var hasMatchingPurpose = false;
+            var index;
+            var service;
+
+            if (!context) {
+                return config;
+            }
+
+            context.options = getBootstrapOptions(script);
+            requestedTargetName = context.options.youtubeConsentTargetName;
+            context.youtubeConsentTargetName = requestedTargetName === null
+                ? null
+                : (requestedTargetName || SERVICE_NAMES.youtube);
+
+            if (!config || !config.services) {
+                return config;
+            }
+
+            for (index = 0; index < config.services.length; index++) {
+                service = config.services[index];
+
+                if (service.name === SERVICE_NAMES.youtube) {
+                    youtubeService = service;
+                    continue;
+                }
+
+                if (!isServiceEnabledFromOptions(service.name, context.options)) {
+                    continue;
+                }
+
+                filteredServices.push(service);
+
+                if (!requestedTargetName || context.youtubeConsentTargetName === SERVICE_NAMES.youtube) {
+                    continue;
+                }
+
+                if (service.name === requestedTargetName) {
+                    hasMatchingService = true;
+                    continue;
+                }
+
+                if (serviceMatchesPurpose(service, requestedTargetName)) {
+                    hasMatchingPurpose = true;
+                }
+            }
+
+            if (requestedTargetName !== null
+                && context.youtubeConsentTargetName !== SERVICE_NAMES.youtube
+                && !hasMatchingService
+                && !hasMatchingPurpose) {
+                context.youtubeConsentTargetName = SERVICE_NAMES.youtube;
+            }
+
+            if (youtubeService && context.youtubeConsentTargetName === SERVICE_NAMES.youtube) {
+                filteredServices.push(youtubeService);
+            }
+
+            config.services = filteredServices;
+            return config;
+        }
+
+        if (currentConfig) {
+            window.klaroConfig = applyFilter(currentConfig);
+            return;
+        }
+
+        Object.defineProperty(window, 'klaroConfig', {
+            configurable: true,
+            enumerable: true,
+            get: function () {
+                return currentConfig;
+            },
+            set: function (value) {
+                currentConfig = applyFilter(value);
+            }
+        });
+    }
+
     function getFirstScriptParent() {
         var firstScript = document.getElementsByTagName('script')[0];
 
@@ -1001,7 +1163,7 @@
     }
 
     function createYouTubeVendor(options) {
-        var consentTargetName = options.consentTargetName || SERVICE_NAMES.youtube;
+        var defaultConsentTargetName = options.consentTargetName || SERVICE_NAMES.youtube;
         var consentGranted = false;
         var observer = null;
         var tokenCounter = 0;
@@ -1011,6 +1173,14 @@
             description: 'This video loads from YouTube only after consent.',
             button: 'Load video'
         };
+
+        function getConsentTargetName() {
+            if (typeof options.getConsentTargetName === 'function') {
+                return options.getConsentTargetName() || defaultConsentTargetName;
+            }
+
+            return defaultConsentTargetName;
+        }
 
         function getManager() {
             if (!window.klaro || typeof window.klaro.getManager !== 'function') {
@@ -1031,7 +1201,7 @@
                 return false;
             }
 
-            if (!updateConsentTarget(manager, consentTargetName, true)) {
+            if (!updateConsentTarget(manager, getConsentTargetName(), true)) {
                 return false;
             }
 
@@ -1264,7 +1434,7 @@
         return {
             serviceName: SERVICE_NAMES.youtube,
             isActive: function (manager) {
-                return isConsentTargetActive(manager, consentTargetName);
+                return isConsentTargetActive(manager, getConsentTargetName());
             },
             init: function () {
                 if (typeof MutationObserver === 'function' && document.documentElement) {
@@ -1308,18 +1478,19 @@
         };
     }
 
-    function buildRegistry(script) {
+    function buildRegistry(context) {
         var registry = createVendorRegistry();
-        var dataLayerName = script ? script.getAttribute('data-layer-name') : null;
-        var gtmId = script ? script.getAttribute('data-gtm-id') : null;
-        var clarityProjectId = script ? script.getAttribute('data-clarity-project-id') : null;
-        var metaPixelId = script ? script.getAttribute('data-meta-pixel-id') : null;
-        var linkedinPartnerId = script ? script.getAttribute('data-linkedin-partner-id') : null;
-        var pinterestTagId = script ? script.getAttribute('data-pinterest-tag-id') : null;
-        var tiktokPixelId = script ? script.getAttribute('data-tiktok-pixel-id') : null;
-        var hotjarId = script ? script.getAttribute('data-hotjar-id') : null;
-        var hotjarVersion = script ? script.getAttribute('data-hotjar-version') : null;
-        var youtubeConsentTargetName = script ? script.getAttribute('data-youtube-service') : null;
+        var options = context ? context.options : null;
+        var dataLayerName = options ? options.dataLayerName : null;
+        var gtmId = options ? options.gtmId : null;
+        var clarityProjectId = options ? options.clarityProjectId : null;
+        var metaPixelId = options ? options.metaPixelId : null;
+        var linkedinPartnerId = options ? options.linkedinPartnerId : null;
+        var pinterestTagId = options ? options.pinterestTagId : null;
+        var tiktokPixelId = options ? options.tiktokPixelId : null;
+        var hotjarId = options ? options.hotjarId : null;
+        var hotjarVersion = options ? options.hotjarVersion : null;
+        var youtubeConsentTargetName = context ? context.youtubeConsentTargetName : null;
 
         if (gtmId !== null) {
             registry.register(createGtmVendor({
@@ -1367,7 +1538,10 @@
 
         if (youtubeConsentTargetName !== null) {
             registry.register(createYouTubeVendor({
-                consentTargetName: youtubeConsentTargetName || SERVICE_NAMES.youtube
+                consentTargetName: youtubeConsentTargetName || SERVICE_NAMES.youtube,
+                getConsentTargetName: function () {
+                    return context ? context.youtubeConsentTargetName : null;
+                }
             }));
         }
 
@@ -1375,9 +1549,19 @@
     }
 
     var currentScript = document.currentScript;
-    var registry = buildRegistry(currentScript);
+    var bootstrapContext = {
+        options: getBootstrapOptions(currentScript),
+        youtubeConsentTargetName: null
+    };
+
+    if (bootstrapContext.options.youtubeConsentTargetName !== null) {
+        bootstrapContext.youtubeConsentTargetName = bootstrapContext.options.youtubeConsentTargetName || SERVICE_NAMES.youtube;
+    }
+
+    installKlaroConfigFilter(currentScript, bootstrapContext);
+    var registry = buildRegistry(bootstrapContext);
     var settingsButton = createSettingsButton({
-        mode: currentScript ? currentScript.getAttribute('data-settings-button') : null
+        mode: bootstrapContext.options ? bootstrapContext.options.settingsButtonMode : null
     });
     var klaroBridge = createKlaroBridge(registry, settingsButton);
 
