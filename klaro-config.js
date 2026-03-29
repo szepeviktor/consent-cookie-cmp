@@ -153,6 +153,24 @@ window.klaroConfig = {
             }
         },
         {
+            name: 'activecampaign-site-tracking',
+            title: 'ActiveCampaign Site Tracking',
+            purposes: ['analytics'],
+            default: false,
+            required: false,
+            optOut: false,
+            onlyOnce: true,
+            cookies: [
+                'ac_enable_tracking'
+            ],
+            translations: {
+                hu: {
+                    title: 'ActiveCampaign Site Tracking',
+                    description: 'Az ActiveCampaign Site Tracking ismert kapcsolatok oldalmegtekintéseit és marketingautomatizációs interakcióit követi, és csak az engedélyezésed után töltődik be.'
+                }
+            }
+        },
+        {
             name: 'meta-pixel',
             title: 'Meta Pixel',
             purposes: ['advertising'],

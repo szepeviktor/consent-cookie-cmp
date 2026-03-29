@@ -15,6 +15,7 @@ The current standalone setup expects these Klaro services in `klaro-config.js`:
 - `google-tag-manager`
 - `microsoft-clarity`
 - `hotjar`
+- `activecampaign-site-tracking`
 - `meta-pixel`
 - `linkedin-insight-tag`
 - `pinterest-tag`
@@ -44,6 +45,7 @@ At the top of the page, inside `<head>`:
     data-clarity-project-id="abcdefghij"
     data-hotjar-id="1234567"
     data-hotjar-version="6"
+    data-activecampaign-account-id="123456789"
     data-meta-pixel-id="123456789012345"
     data-linkedin-partner-id="1234567"
     data-pinterest-tag-id="1234567890123"
@@ -76,6 +78,8 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
   - Hotjar site ID.
 - `data-hotjar-version`
   - Optional Hotjar script version. Default: `6`.
+- `data-activecampaign-account-id`
+  - ActiveCampaign Site Tracking account ID.
 - `data-meta-pixel-id`
   - Meta Pixel ID.
 - `data-linkedin-partner-id`
@@ -102,6 +106,10 @@ Behavior by integration:
 - Hotjar
   - Loads only after consent.
   - On revoke, client-side Hotjar storage cleanup runs where possible.
+- ActiveCampaign Site Tracking
+  - Loads only after consent.
+  - Uses `vgo('setTrackByDefault', false)` and only calls `vgo('process', 'allowTracking')` after consent.
+  - On revoke, clears the `ac_enable_tracking` compatibility cookie so future page loads stay blocked.
 - Meta Pixel
   - Loads only after consent.
   - Uses `fbq('set', 'autoConfig', false, pixelId)` before `fbq('init', pixelId)`.
@@ -125,6 +133,7 @@ Behavior by integration:
 
 Your `klaro-config.js` should also define cookie cleanup lists for the services you enable, so consent revoke removes their first-party cookies.
 For Microsoft Clarity, include `_clck` and `_clsk`.
+For ActiveCampaign Site Tracking, include `ac_enable_tracking`.
 
 ## Usage
 

@@ -5,6 +5,7 @@
     var SERVICE_NAMES = {
         gtm: 'google-tag-manager',
         clarity: 'microsoft-clarity',
+        activeCampaign: 'activecampaign-site-tracking',
         metaPixel: 'meta-pixel',
         linkedinInsightTag: 'linkedin-insight-tag',
         pinterestTag: 'pinterest-tag',
@@ -16,6 +17,7 @@
     var SERVICE_DATA_ATTRIBUTES = {
         gtm: 'data-gtm-id',
         clarity: 'data-clarity-project-id',
+        activeCampaign: 'data-activecampaign-account-id',
         metaPixel: 'data-meta-pixel-id',
         linkedinInsightTag: 'data-linkedin-partner-id',
         pinterestTag: 'data-pinterest-tag-id',
@@ -37,6 +39,10 @@
 
             if (serviceKey === 'clarity') {
                 return 'clarityProjectId';
+            }
+
+            if (serviceKey === 'activeCampaign') {
+                return 'activeCampaignAccountId';
             }
 
             if (serviceKey === 'linkedinInsightTag') {
@@ -1167,6 +1173,87 @@
         });
     }
 
+    function createActiveCampaignVendor(options) {
+        var serviceName = SERVICE_NAMES.activeCampaign;
+        var accountId = options.accountId;
+        var hasLoaded = false;
+
+        function ensureRuntime() {
+            if (typeof window.vgo === 'function') {
+                return;
+            }
+
+            window.visitorGlobalObjectAlias = 'vgo';
+            window.vgo = window.vgo || function () {
+                (window.vgo.q = window.vgo.q || []).push(arguments);
+            };
+            window.vgo.l = (new Date()).getTime();
+        }
+
+        function configureRuntime() {
+            if (typeof window.vgo !== 'function') {
+                return;
+            }
+
+            window.vgo('setAccount', accountId);
+            window.vgo('setTrackByDefault', false);
+        }
+
+        function setConsentCookie(enabled) {
+            var expires = enabled
+                ? new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 30)
+                : null;
+            var cookie = 'ac_enable_tracking=' + (enabled ? '1' : '');
+
+            cookie += '; path=/';
+
+            if (enabled) {
+                cookie += '; expires=' + expires.toUTCString();
+            } else {
+                cookie += '; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0';
+            }
+
+            document.cookie = cookie + '; SameSite=None; Secure';
+            document.cookie = cookie;
+        }
+
+        function load() {
+            var scriptElement;
+
+            if (hasLoaded) {
+                return;
+            }
+
+            ensureRuntime();
+            configureRuntime();
+
+            scriptElement = document.createElement('script');
+            scriptElement.async = true;
+            scriptElement.src = 'https://diffuser-cdn.app-us1.com/diffuser/diffuser.js';
+
+            if (insertScript(scriptElement)) {
+                hasLoaded = true;
+            }
+        }
+
+        return createConsentAwareVendor(serviceName, {
+            grant: function () {
+                load();
+                configureRuntime();
+                setConsentCookie(true);
+
+                if (typeof window.vgo === 'function') {
+                    window.vgo('process');
+                    window.vgo('process', 'allowTracking');
+                }
+            },
+            revoke: function () {
+                configureRuntime();
+                setConsentCookie(false);
+            }
+        });
+    }
+
     function createYouTubeVendor(options) {
         var defaultConsentTargetName = options.consentTargetName || SERVICE_NAMES.youtube;
         var consentGranted = false;
@@ -1489,6 +1576,7 @@
         var dataLayerName = options ? options.dataLayerName : null;
         var gtmId = options ? options.gtmId : null;
         var clarityProjectId = options ? options.clarityProjectId : null;
+        var activeCampaignAccountId = options ? options.activeCampaignAccountId : null;
         var metaPixelId = options ? options.metaPixelId : null;
         var linkedinPartnerId = options ? options.linkedinPartnerId : null;
         var pinterestTagId = options ? options.pinterestTagId : null;
@@ -1507,6 +1595,12 @@
         if (clarityProjectId !== null) {
             registry.register(createClarityVendor({
                 projectId: clarityProjectId
+            }));
+        }
+
+        if (activeCampaignAccountId !== null) {
+            registry.register(createActiveCampaignVendor({
+                accountId: activeCampaignAccountId
             }));
         }
 
