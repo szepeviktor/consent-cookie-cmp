@@ -4,6 +4,7 @@
 
     var SERVICE_NAMES = {
         gtm: 'google-tag-manager',
+        gtag: 'google-tag',
         clarity: 'microsoft-clarity',
         activeCampaign: 'activecampaign-site-tracking',
         metaPixel: 'meta-pixel',
@@ -16,6 +17,8 @@
 
     var SERVICE_DATA_ATTRIBUTES = {
         gtm: 'data-gtm-id',
+        gtag: 'data-gtag-id',
+        // data-gtag-ids is parsed separately because it supports comma-separated values.
         clarity: 'data-clarity-project-id',
         activeCampaign: 'data-activecampaign-account-id',
         metaPixel: 'data-meta-pixel-id',
@@ -55,12 +58,68 @@
         return null;
     }
 
+    function trimString(value) {
+        return value.replace(/^\s+|\s+$/g, '');
+    }
+
+    function parseAttributeList(value) {
+        var values = [];
+        var parts;
+        var index;
+        var part;
+
+        if (typeof value !== 'string') {
+            return values;
+        }
+
+        parts = value.split(',');
+        for (index = 0; index < parts.length; index += 1) {
+            part = trimString(parts[index]);
+            if (part) {
+                values.push(part);
+            }
+        }
+
+        return values;
+    }
+
+    function buildUniqueIdList(primaryValue, values) {
+        var ids = [];
+        var seen = Object.create(null);
+        var index;
+        var value;
+
+        function addId(id) {
+            if (typeof id !== 'string') {
+                return;
+            }
+
+            id = trimString(id);
+            if (!id || seen[id]) {
+                return;
+            }
+
+            seen[id] = true;
+            ids.push(id);
+        }
+
+        addId(primaryValue);
+
+        for (index = 0; values && index < values.length; index += 1) {
+            value = values[index];
+            addId(value);
+        }
+
+        return ids;
+    }
+
     function getBootstrapOptions(script) {
         var options = {
             settingsButtonMode: script ? script.getAttribute('data-settings-button') : null,
             dataLayerName: script ? script.getAttribute('data-layer-name') : null,
             hotjarVersion: script ? script.getAttribute('data-hotjar-version') : null,
-            youtubeConsentTargetName: script ? script.getAttribute('data-youtube-service') : null
+            youtubeConsentTargetName: script ? script.getAttribute('data-youtube-service') : null,
+            gtagIds: parseAttributeList(script ? script.getAttribute('data-gtag-ids') : null)
         };
         var serviceKey;
         var serviceName;
@@ -75,6 +134,10 @@
             }
 
             options[optionName] = script ? script.getAttribute(SERVICE_DATA_ATTRIBUTES[serviceKey]) : null;
+        }
+
+        if (options.gtagId === null && options.gtagIds && options.gtagIds.length > 0) {
+            options.gtagId = options.gtagIds[0];
         }
 
         return options;
@@ -643,60 +706,61 @@
         return changed;
     }
 
+    function ensureGoogleTagRuntime(dataLayerName) {
+        window[dataLayerName] = window[dataLayerName] || [];
+
+        if (typeof window.gtag !== 'function') {
+            window.gtag = function () {
+                window[dataLayerName].push(arguments);
+            };
+        }
+    }
+
+    function buildGoogleConsentState(consent) {
+        return {
+            analytics_storage: consent ? 'granted' : 'denied',
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied'
+        };
+    }
+
+    function updateGoogleTagConsent(dataLayerName, consent) {
+        ensureGoogleTagRuntime(dataLayerName);
+        window.gtag('consent', 'update', buildGoogleConsentState(consent));
+    }
+
+    function buildGoogleDataLayerParam(dataLayerName) {
+        return dataLayerName !== 'dataLayer'
+            ? '&l=' + encodeURIComponent(dataLayerName)
+            : '';
+    }
+
     function createGtmVendor(options) {
         var serviceName = SERVICE_NAMES.gtm;
         var gtmId = options.gtmId;
         var dataLayerName = options.dataLayerName || 'dataLayer';
         var hasLoaded = false;
 
-        function ensureRuntime() {
-            window[dataLayerName] = window[dataLayerName] || [];
-
-            if (typeof window.gtag !== 'function') {
-                window.gtag = function () {
-                    window[dataLayerName].push(arguments);
-                };
-            }
-        }
-
-        function buildConsentState(consent) {
-            return {
-                analytics_storage: consent ? 'granted' : 'denied',
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
-            };
-        }
-
-        function updateConsent(consent) {
-            ensureRuntime();
-            window.gtag('consent', 'update', buildConsentState(consent));
-        }
-
         function load() {
-            var dlParam;
             var scriptElement;
 
             if (hasLoaded) {
                 return;
             }
 
-            ensureRuntime();
-            window.gtag('consent', 'default', buildConsentState(false));
+            ensureGoogleTagRuntime(dataLayerName);
+            window.gtag('consent', 'default', buildGoogleConsentState(false));
             window[dataLayerName].push({
                 'gtm.start': new Date().getTime(),
                 event: 'gtm.js'
             });
 
-            dlParam = dataLayerName !== 'dataLayer'
-                ? '&l=' + encodeURIComponent(dataLayerName)
-                : '';
-
             scriptElement = document.createElement('script');
             scriptElement.async = true;
             scriptElement.src = 'https://www.googletagmanager.com/gtm.js?id='
                 + encodeURIComponent(gtmId)
-                + dlParam;
+                + buildGoogleDataLayerParam(dataLayerName);
 
             if (insertScript(scriptElement)) {
                 hasLoaded = true;
@@ -707,12 +771,72 @@
             grant: function () {
                 load();
                 if (hasLoaded) {
-                    updateConsent(true);
+                    updateGoogleTagConsent(dataLayerName, true);
                 }
             },
             revoke: function () {
                 if (hasLoaded) {
-                    updateConsent(false);
+                    updateGoogleTagConsent(dataLayerName, false);
+                }
+            }
+        });
+    }
+
+    function createGtagVendor(options) {
+        var serviceName = SERVICE_NAMES.gtag;
+        var gtagIds = buildUniqueIdList(options.gtagId, options.gtagIds);
+        var gtagId = gtagIds.length > 0 ? gtagIds[0] : null;
+        var dataLayerName = options.dataLayerName || 'dataLayer';
+        var hasLoaded = false;
+        var hasConfigured = false;
+
+        function load() {
+            var scriptElement;
+
+            if (hasLoaded || gtagId === null) {
+                return;
+            }
+
+            ensureGoogleTagRuntime(dataLayerName);
+            window.gtag('consent', 'default', buildGoogleConsentState(false));
+            window.gtag('js', new Date());
+
+            scriptElement = document.createElement('script');
+            scriptElement.async = true;
+            scriptElement.src = 'https://www.googletagmanager.com/gtag/js?id='
+                + encodeURIComponent(gtagId)
+                + buildGoogleDataLayerParam(dataLayerName);
+
+            if (insertScript(scriptElement)) {
+                hasLoaded = true;
+            }
+        }
+
+        function configure() {
+            var idIndex;
+
+            if (hasConfigured) {
+                return;
+            }
+
+            ensureGoogleTagRuntime(dataLayerName);
+            for (idIndex = 0; idIndex < gtagIds.length; idIndex += 1) {
+                window.gtag('config', gtagIds[idIndex]);
+            }
+            hasConfigured = true;
+        }
+
+        return createConsentAwareVendor(serviceName, {
+            grant: function () {
+                load();
+                if (hasLoaded) {
+                    updateGoogleTagConsent(dataLayerName, true);
+                    configure();
+                }
+            },
+            revoke: function () {
+                if (hasLoaded) {
+                    updateGoogleTagConsent(dataLayerName, false);
                 }
             }
         });
@@ -1575,6 +1699,8 @@
         var options = context ? context.options : null;
         var dataLayerName = options ? options.dataLayerName : null;
         var gtmId = options ? options.gtmId : null;
+        var gtagId = options ? options.gtagId : null;
+        var gtagIds = options && options.gtagIds ? options.gtagIds : [];
         var clarityProjectId = options ? options.clarityProjectId : null;
         var activeCampaignAccountId = options ? options.activeCampaignAccountId : null;
         var metaPixelId = options ? options.metaPixelId : null;
@@ -1588,6 +1714,14 @@
         if (gtmId !== null) {
             registry.register(createGtmVendor({
                 gtmId: gtmId,
+                dataLayerName: dataLayerName || 'dataLayer'
+            }));
+        }
+
+        if (gtagId !== null || gtagIds.length > 0) {
+            registry.register(createGtagVendor({
+                gtagId: gtagId,
+                gtagIds: gtagIds,
                 dataLayerName: dataLayerName || 'dataLayer'
             }));
         }

@@ -26,12 +26,16 @@
   - let the registry drive consent transitions
 - Current supported bootstrap attributes:
   - `data-gtm-id`
+  - `data-gtag-id`
   - `data-layer-name` (optional)
   - `data-meta-pixel-id`
 
 ## Tag behavior
 
 - Google Tag Manager:
+  - load only after consent
+  - on revoke, keep the script loaded but send denied Consent Mode updates
+- Google tag:
   - load only after consent
   - on revoke, keep the script loaded but send denied Consent Mode updates
 - Meta Pixel:
@@ -45,10 +49,12 @@
 - Keep separate Klaro services for:
   - `klaro` as a required `functional` service
   - `google-tag-manager` as `analytics`
+  - `google-tag` as `analytics`
   - `meta-pixel` as `advertising`
 - Keep explicit cookie deletion lists so revoke clears browser cookies:
   - `klaro`: `klaro`
   - `google-tag-manager`: `_ga`, `^_ga_.*`, `_gid`, `^_gat.*`
+  - `google-tag`: `_ga`, `^_ga_.*`, `_gid`, `^_gat.*`
   - `meta-pixel`: `_fbp`, `_fbc`
 
 ## Browser test checklist
