@@ -25,6 +25,7 @@
   - implement explicit `grant()` and `revoke()` behavior
   - let the registry drive consent transitions
 - Current supported bootstrap attributes:
+  - `data-bugsnag-api-key`
   - `data-gtm-id`
   - `data-layer-name` (optional)
   - `data-meta-pixel-id`

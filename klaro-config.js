@@ -19,7 +19,7 @@ window.klaroConfig = {
         hu: {
             consentNotice: {
                 title: 'Sütibeállítások',
-                description: 'Az oldal sütiket használ az alapműködéshez, analitikához és marketinghez. A Google Tag Manager, a Microsoft Clarity, a Hotjar, a Meta Pixel, a LinkedIn Insight Tag, a Pinterest Tag, a TikTok Pixel és a YouTube csak az engedélyezésed után töltődik be.'
+                description: 'Az oldal sütiket használ az alapműködéshez, hibakövetéshez, analitikához és marketinghez. A Bugsnag az oldal stabilitásának figyeléséhez szükséges, a Google Tag Manager, a Microsoft Clarity, a Hotjar, a Meta Pixel, a LinkedIn Insight Tag, a Pinterest Tag, a TikTok Pixel és a YouTube pedig csak az engedélyezésed után töltődik be.'
             },
             consentModal: {
                 title: 'Adatvédelmi beállítások',
@@ -78,6 +78,22 @@ window.klaroConfig = {
                 hu: {
                     title: 'Klaro',
                     description: 'A Klaro menti a sütibeállításaidat, hogy a választásod a következő látogatáskor is megmaradjon.'
+                }
+            }
+        },
+        {
+            name: 'bugsnag',
+            title: 'Bugsnag',
+            purposes: ['functional'],
+            default: true,
+            required: true,
+            optOut: false,
+            onlyOnce: true,
+            cookies: [],
+            translations: {
+                hu: {
+                    title: 'Bugsnag',
+                    description: 'A Bugsnag a JavaScript hibák és stabilitási problémák figyelésére szolgál, és az oldal megbízható működésének támogatásához szükséges.'
                 }
             }
         },

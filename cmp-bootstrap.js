@@ -4,6 +4,7 @@
 
     var SERVICE_NAMES = {
         gtm: 'google-tag-manager',
+        bugsnag: 'bugsnag',
         clarity: 'microsoft-clarity',
         activeCampaign: 'activecampaign-site-tracking',
         metaPixel: 'meta-pixel',
@@ -16,6 +17,7 @@
 
     var SERVICE_DATA_ATTRIBUTES = {
         gtm: 'data-gtm-id',
+        bugsnag: 'data-bugsnag-api-key',
         clarity: 'data-clarity-project-id',
         activeCampaign: 'data-activecampaign-account-id',
         metaPixel: 'data-meta-pixel-id',
@@ -39,6 +41,10 @@
 
             if (serviceKey === 'clarity') {
                 return 'clarityProjectId';
+            }
+
+            if (serviceKey === 'bugsnag') {
+                return 'bugsnagApiKey';
             }
 
             if (serviceKey === 'activeCampaign') {
@@ -84,10 +90,6 @@
         var optionName;
         var serviceName = service && service.name;
 
-        if (service && service.required) {
-            return true;
-        }
-
         if (serviceName === 'klaro') {
             return true;
         }
@@ -97,7 +99,11 @@
         }
 
         optionName = getServiceOptionName(serviceName);
-        return !!optionName && options[optionName] !== null;
+        if (optionName) {
+            return options[optionName] !== null;
+        }
+
+        return !!(service && service.required);
     }
 
     function installKlaroConfigFilter(script, context) {
@@ -716,6 +722,67 @@
                 }
             }
         });
+    }
+
+    function createBugsnagVendor(options) {
+        var serviceName = SERVICE_NAMES.bugsnag;
+        var apiKey = options.apiKey;
+        var scriptUrl = options.scriptUrl;
+        var hasLoaded = false;
+        var hasStarted = false;
+
+        function buildConfig() {
+            return {
+                apiKey: apiKey
+            };
+        }
+
+        function startClient() {
+            if (hasStarted || !window.Bugsnag || typeof window.Bugsnag.start !== 'function') {
+                return;
+            }
+
+            window.Bugsnag.start(buildConfig());
+            hasStarted = true;
+        }
+
+        function load() {
+            var scriptElement;
+
+            if (hasLoaded) {
+                return;
+            }
+
+            if (window.Bugsnag && typeof window.Bugsnag.start === 'function') {
+                hasLoaded = true;
+                startClient();
+                return;
+            }
+
+            scriptElement = document.createElement('script');
+            scriptElement.async = true;
+            scriptElement.src = scriptUrl;
+            scriptElement.onload = function () {
+                startClient();
+            };
+            scriptElement.onerror = function () {
+                console.warn('CMP bootstrap: failed to load Bugsnag');
+            };
+
+            if (insertScript(scriptElement)) {
+                hasLoaded = true;
+            }
+        }
+
+        return {
+            serviceName: serviceName,
+            init: function () {
+                load();
+            },
+            syncConsent: function () {
+                startClient();
+            }
+        };
     }
 
     function createMetaPixelVendor(options) {
@@ -1575,6 +1642,7 @@
         var options = context ? context.options : null;
         var dataLayerName = options ? options.dataLayerName : null;
         var gtmId = options ? options.gtmId : null;
+        var bugsnagApiKey = options ? options.bugsnagApiKey : null;
         var clarityProjectId = options ? options.clarityProjectId : null;
         var activeCampaignAccountId = options ? options.activeCampaignAccountId : null;
         var metaPixelId = options ? options.metaPixelId : null;
@@ -1589,6 +1657,13 @@
             registry.register(createGtmVendor({
                 gtmId: gtmId,
                 dataLayerName: dataLayerName || 'dataLayer'
+            }));
+        }
+
+        if (bugsnagApiKey !== null) {
+            registry.register(createBugsnagVendor({
+                apiKey: bugsnagApiKey,
+                scriptUrl: 'https://d2wy8f7a9ursnm.cloudfront.net/v8.9.0/bugsnag.min.js'
             }));
         }
 

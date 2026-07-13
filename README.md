@@ -12,6 +12,7 @@ A lightweight Klaro-based JavaScript consent manager with Google CMP compatibili
 The current standalone setup expects these Klaro services in `klaro-config.js`:
 
 - `klaro`
+- `bugsnag`
 - `google-tag-manager`
 - `microsoft-clarity`
 - `hotjar`
@@ -41,6 +42,7 @@ At the top of the page, inside `<head>`:
 <link rel="stylesheet" href="/cmp/cmp.css">
 <script
     src="/cmp/cmp-bootstrap.js"
+    data-bugsnag-api-key="YOUR_BUGSNAG_API_KEY"
     data-gtm-id="GTM-XXXXXXX"
     data-clarity-project-id="abcdefghij"
     data-hotjar-id="1234567"
@@ -70,6 +72,8 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
 
 - `data-gtm-id`
   - Google Tag Manager container ID.
+- `data-bugsnag-api-key`
+  - Bugsnag project API key.
 - `data-clarity-project-id`
   - Microsoft Clarity project ID.
 - `data-layer-name`
@@ -97,6 +101,10 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
 
 Behavior by integration:
 
+- Bugsnag
+  - Loads immediately when `data-bugsnag-api-key` is present.
+  - Uses the BugSnag browser CDN and starts with `apiKey`.
+  - Exposed in Klaro as a required functional service, not a consent-gated optional vendor.
 - Google Tag Manager
   - Loads only after consent.
   - On revoke, stays loaded but receives denied Consent Mode updates.
