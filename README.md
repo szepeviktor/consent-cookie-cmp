@@ -72,12 +72,12 @@ The bootstrap is configured through `data-*` attributes on the `cmp-bootstrap.js
 
 - `data-gtm-id`
   - Google Tag Manager container ID.
+- `data-layer-name`
+  - Optional custom dataLayer name for GTM. Default: `dataLayer`.
 - `data-bugsnag-api-key`
   - Bugsnag project API key.
 - `data-clarity-project-id`
   - Microsoft Clarity project ID.
-- `data-layer-name`
-  - Optional custom dataLayer name for GTM. Default: `dataLayer`.
 - `data-hotjar-id`
   - Hotjar site ID.
 - `data-hotjar-version`
