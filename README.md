@@ -14,6 +14,7 @@ The current standalone setup expects these Klaro services in `klaro-config.js`:
 - `klaro`
 - `bugsnag`
 - `google-tag-manager`
+- `google-advertising`
 - `microsoft-clarity`
 - `hotjar`
 - `activecampaign-site-tracking`
@@ -32,6 +33,8 @@ Copy these files to your site:
 - `klaro-config.js`
 - `klaro.css`
 - `klaro.js`
+
+The asset directory is configurable; `/cmp/` below is only an example. For WordPress, copy the assets to `wp-content/cmp/` and use `examples/cmp.php`, which builds URLs with `content_url('cmp')`. No files need to live in the site root.
 
 Include them in your page in this order.
 
@@ -106,7 +109,9 @@ Behavior by integration:
   - Uses the BugSnag browser CDN and starts with `apiKey`.
   - Exposed in Klaro as a required functional service, not a consent-gated optional vendor.
 - Google Tag Manager
-  - Loads only after consent.
+  - Loads after analytics or Google advertising consent.
+  - `google-tag-manager` controls `analytics_storage`; the separate `google-advertising` service controls `ad_storage`, `ad_user_data`, and `ad_personalization`. YouTube consent alone never grants Google advertising consent.
+  - Configure the container tags to respect consent; the bootstrap cannot enforce consent on arbitrary custom tags. Remove the optional `google-advertising` service from your config if the container has no Google advertising tags.
   - On revoke, stays loaded but receives denied Consent Mode updates.
 - Microsoft Clarity
   - Loads only after consent.
@@ -204,3 +209,9 @@ To add YouTube consent blocking, place an inert YouTube iframe in the HTML and m
 ```
 
 The bootstrap also accepts `data-src` for compatibility, and still supports legacy live `src` embeds, but that older pattern is not privacy-safe because the browser may fetch YouTube before the placeholder swap happens.
+
+## Styling and YouTube translations
+
+`cmp.css` contains only CMP component styles. `demo.css` is for the standalone demo only; do not include it on integrated sites. Klaro injects its own stylesheet at runtime, so custom overrides must have greater selector specificity rather than relying on load order.
+
+YouTube placeholder strings are configured in `translations.hu.youtubePlaceholder` (`title`, `description`, `button`). The bootstrap uses `klaroConfig.lang`, with a base-language fallback. Specific iframe titles are preserved. Placeholders follow the original iframe layout, including responsive and iframe-specific CSS; active embeds retain the original width/height attributes instead of converting them to inline pixel sizes. Preview images still load from `i.ytimg.com` before consent.
