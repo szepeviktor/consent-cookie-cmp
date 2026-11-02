@@ -17,6 +17,11 @@ window.klaroConfig = {
     lang: 'hu',
     translations: {
         hu: {
+            youtubePlaceholder: {
+                title: 'YouTube-videó',
+                description: 'A YouTube-videó csak a hozzájárulásod után töltődik be.',
+                button: 'Videó betöltése'
+            },
             consentNotice: {
                 title: 'Sütibeállítások',
                 description: 'Az oldal sütiket használ az alapműködéshez, hibakövetéshez, analitikához és marketinghez. A Bugsnag az oldal stabilitásának figyeléséhez szükséges, a Google Tag Manager, a Microsoft Clarity, a Hotjar, a Meta Pixel, a LinkedIn Insight Tag, a Pinterest Tag, a TikTok Pixel és a YouTube pedig csak az engedélyezésed után töltődik be.'
@@ -115,6 +120,22 @@ window.klaroConfig = {
                 hu: {
                     title: 'Google Tag Manager',
                     description: 'A Google Tag Manager az analitikai tagek kezelésére szolgál, és csak az engedélyezésed után töltődik be.'
+                }
+            }
+        },
+        {
+            name: 'google-advertising',
+            title: 'Google Ads',
+            purposes: ['advertising'],
+            default: false,
+            required: false,
+            optOut: false,
+            onlyOnce: true,
+            cookies: [/^_gcl_.*/],
+            translations: {
+                hu: {
+                    title: 'Google hirdetési mérések',
+                    description: 'A Google Tag Manageren keresztüli Google hirdetési mérések és személyre szabás engedélyezése.'
                 }
             }
         },

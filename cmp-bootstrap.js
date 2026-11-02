@@ -30,6 +30,10 @@
     function getServiceOptionName(serviceName) {
         var serviceKey;
 
+        if (serviceName === 'google-advertising') {
+            return 'gtmId';
+        }
+
         for (serviceKey in SERVICE_NAMES) {
             if (SERVICE_NAMES[serviceKey] !== serviceName) {
                 continue;
@@ -253,7 +257,7 @@
                         ? vendor.isActive(manager)
                         : isServiceActive(manager, serviceName);
 
-                    vendor.syncConsent(consent);
+                    vendor.syncConsent(consent, manager);
                 });
             }
         };
@@ -665,18 +669,18 @@
             }
         }
 
-        function buildConsentState(consent) {
+        function buildConsentState(consent, advertisingConsent) {
             return {
                 analytics_storage: consent ? 'granted' : 'denied',
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
+                ad_storage: advertisingConsent ? 'granted' : 'denied',
+                ad_user_data: advertisingConsent ? 'granted' : 'denied',
+                ad_personalization: advertisingConsent ? 'granted' : 'denied'
             };
         }
 
-        function updateConsent(consent) {
+        function updateConsent(consent, advertisingConsent) {
             ensureRuntime();
-            window.gtag('consent', 'update', buildConsentState(consent));
+            window.gtag('consent', 'update', buildConsentState(consent, advertisingConsent));
         }
 
         function load() {
@@ -709,19 +713,18 @@
             }
         }
 
-        return createConsentAwareVendor(serviceName, {
-            grant: function () {
-                load();
-                if (hasLoaded) {
-                    updateConsent(true);
+        return {
+            serviceName: serviceName,
+            syncConsent: function (consent, manager) {
+                var advertisingConsent = isServiceActive(manager, 'google-advertising');
+                if (consent || advertisingConsent) {
+                    load();
                 }
-            },
-            revoke: function () {
                 if (hasLoaded) {
-                    updateConsent(false);
+                    updateConsent(consent, advertisingConsent);
                 }
             }
-        });
+        };
     }
 
     function createBugsnagVendor(options) {
@@ -1327,11 +1330,25 @@
         var observer = null;
         var tokenCounter = 0;
         var entries = Object.create(null);
-        var placeholderCopy = {
+        var defaultPlaceholderCopy = {
             title: 'YouTube video',
             description: 'This video loads from YouTube only after consent.',
             button: 'Load video'
         };
+
+        function getPlaceholderCopy() {
+            var config = window.klaroConfig || {};
+            var translations = config.translations || {};
+            var language = config.lang || 'hu';
+            var translation = translations[language] || translations[language.split('-')[0]] || {};
+            var copy = translation.youtubePlaceholder || {};
+
+            return {
+                title: copy.title || defaultPlaceholderCopy.title,
+                description: copy.description || defaultPlaceholderCopy.description,
+                button: copy.button || defaultPlaceholderCopy.button
+            };
+        }
 
         function getConsentTargetName() {
             if (typeof options.getConsentTargetName === 'function') {
@@ -1367,10 +1384,6 @@
             manager.saveAndApplyConsents('contextual');
 
             return true;
-        }
-
-        function appendCssUnit(value) {
-            return /^\d+$/.test(value) ? value + 'px' : value;
         }
 
         function getIframeSource(iframe) {
@@ -1423,25 +1436,55 @@
         }
 
         function applyPresentation(entry, element) {
+            if (entry.elementId) {
+                element.id = entry.elementId;
+            }
             if (entry.className) {
                 element.className += ' ' + entry.className;
             }
 
             if (entry.styleText) {
-                element.setAttribute('style', entry.styleText);
+                element.style.cssText += ';' + entry.styleText;
             }
 
             if (entry.widthAttr) {
-                element.style.width = appendCssUnit(entry.widthAttr);
+                element.setAttribute('width', entry.widthAttr);
             }
 
             if (entry.heightAttr) {
-                element.style.height = appendCssUnit(entry.heightAttr);
+                element.setAttribute('height', entry.heightAttr);
+            }
+        }
+
+        function preservePlaceholderLayout(entry, placeholder) {
+            var current = entry.currentElement;
+            var probe = entry.layoutTemplate.cloneNode(false);
+            var style;
+            var properties = [
+                'display', 'position', 'top', 'right', 'bottom', 'left',
+                'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height',
+                'box-sizing', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                'flex-grow', 'flex-shrink', 'flex-basis', 'align-self', 'order',
+                'grid-column-start', 'grid-column-end', 'grid-row-start', 'grid-row-end',
+                'vertical-align', 'float', 'clear', 'transform', 'z-index'
+            ];
+            var index;
+
+            if (!current || !current.parentNode || !window.getComputedStyle) {
+                return;
             }
 
-            if (entry.widthNumber && entry.heightNumber && !entry.heightAttr) {
-                element.style.aspectRatio = entry.widthNumber + ' / ' + entry.heightNumber;
+            // Measure an inert iframe so iframe-specific and responsive theme rules apply.
+            current.parentNode.replaceChild(probe, current);
+            style = window.getComputedStyle(probe);
+            for (index = 0; index < properties.length; index++) {
+                placeholder.style.setProperty(properties[index], style.getPropertyValue(properties[index]));
             }
+            if (style.position === 'static') {
+                // Anchor the overlaid copy without changing normal-flow placement.
+                placeholder.style.position = 'relative';
+            }
+            probe.parentNode.replaceChild(current, probe);
         }
 
         function replaceCurrentElement(entry, newElement) {
@@ -1454,6 +1497,7 @@
 
         function activateEntry(entry) {
             var iframe = document.createElement('iframe');
+            var placeholderCopy = getPlaceholderCopy();
 
             iframe.className = 'cmp-youtube-embed';
             iframe.setAttribute('data-cmp-youtube-token', entry.token);
@@ -1473,6 +1517,7 @@
         }
 
         function deactivateEntry(entry) {
+            var placeholderCopy = getPlaceholderCopy();
             var placeholder;
             var content;
             var description;
@@ -1490,6 +1535,7 @@
                 + '")';
 
             applyPresentation(entry, placeholder);
+            preservePlaceholderLayout(entry, placeholder);
 
             content = document.createElement('span');
             content.className = 'cmp-youtube-placeholder-content';
@@ -1541,9 +1587,12 @@
             token = String(tokenCounter++);
             entry = {
                 token: token,
+                elementId: iframe.id,
                 videoId: parsed.videoId,
                 query: parsed.query,
-                title: iframe.getAttribute('title'),
+                title: /^(YouTube video player|YouTube video)$/i.test(iframe.getAttribute('title') || '')
+                    ? null
+                    : iframe.getAttribute('title'),
                 className: iframe.className || '',
                 styleText: iframe.getAttribute('style') || '',
                 widthAttr: iframe.getAttribute('width'),
@@ -1557,6 +1606,11 @@
                 allowFullscreen: iframe.hasAttribute('allowfullscreen'),
                 currentElement: iframe
             };
+
+            entry.layoutTemplate = iframe.cloneNode(false);
+            entry.layoutTemplate.removeAttribute('src');
+            entry.layoutTemplate.removeAttribute('srcdoc');
+            entry.layoutTemplate.setAttribute('data-cmp-youtube-token', token);
 
             entries[token] = entry;
 
@@ -1596,6 +1650,14 @@
                 return isConsentTargetActive(manager, getConsentTargetName());
             },
             init: function () {
+                window.addEventListener('resize', function () {
+                    var token;
+                    for (token in entries) {
+                        if (!consentGranted) {
+                            preservePlaceholderLayout(entries[token], entries[token].currentElement);
+                        }
+                    }
+                });
                 if (typeof MutationObserver === 'function' && document.documentElement) {
                     observer = new MutationObserver(function (mutations) {
                         var mutationIndex;

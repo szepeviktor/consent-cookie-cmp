@@ -89,6 +89,7 @@
   - `klaro` as a required `functional` service
   - `bugsnag` as a required `functional` service when enabled
   - `google-tag-manager` as `analytics`
+  - `google-advertising` as `advertising` when Google advertising consent is needed
   - `microsoft-clarity` as `analytics`
   - `hotjar` as `analytics`
   - `activecampaign-site-tracking` as `analytics`

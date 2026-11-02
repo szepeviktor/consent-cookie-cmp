@@ -1,8 +1,3 @@
-.klaro .cookie-notice {
-    --notice-right: auto;
-    --notice-left: 20px;
-}
-
 .cmp-cookie-settings-trigger {
     position: fixed;
     left: calc(20px + env(safe-area-inset-left, 0px));
@@ -79,24 +74,6 @@
         2px 14px 0 #5b3a29;
 }
 
-body {
-    margin: 0;
-    font-family: Georgia, serif;
-    background: #f4efe7;
-    color: #1d1f24;
-}
-
-main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 48px 20px 80px;
-}
-
-.cmp-youtube-demo {
-    margin-top: 32px;
-}
-
-.cmp-youtube-demo iframe,
 .cmp-youtube-placeholder {
     width: 100%;
     max-width: 100%;
@@ -107,7 +84,6 @@ main {
 
 .cmp-youtube-placeholder {
     position: relative;
-    display: block;
     overflow: hidden;
     padding: 0;
     background-color: #1d1f24;
@@ -184,6 +160,8 @@ main {
     }
 
     .cmp-youtube-placeholder-button {
+        box-sizing: border-box;
+        min-width: 0;
         width: 100%;
     }
 }
