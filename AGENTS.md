@@ -11,7 +11,7 @@
 - The working standalone files live in the repo root:
   - `index.html`
   - `cmp-bootstrap.js`
-  - `klaro-config.js`
+  - `cmp-config.js`
   - `cmp.css`
   - `klaro.css`
   - `klaro.js`

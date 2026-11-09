@@ -19,7 +19,7 @@ add_action('wp_footer', static function () {
     $cmp_url = content_url('cmp');
     ?>
     <!-- Consent Cookie CMP -->
-    <script src="<?php echo esc_url($cmp_url . '/klaro-config.js'); ?>"></script>
+    <script src="<?php echo esc_url($cmp_url . '/cmp-config.js'); ?>"></script>
     <script src="<?php echo esc_url($cmp_url . '/klaro.js'); ?>" defer></script>
     <?php
 });

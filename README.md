@@ -9,7 +9,7 @@ A lightweight Klaro-based JavaScript consent manager with Google CMP compatibili
 - A Klaro configuration that defines the services used by the bootstrap.
 - If you use YouTube blocking, prefer an inert YouTube iframe with no `src`; keep the embed URL in `data-cmp-src` so the browser cannot start the YouTube embed before consent.
 
-The current standalone setup expects these Klaro services in `klaro-config.js`:
+The current standalone setup expects these Klaro services in `cmp-config.js`:
 
 - `klaro`
 - `bugsnag`
@@ -30,7 +30,7 @@ Copy these files to your site:
 
 - `cmp-bootstrap.js`
 - `cmp.css`
-- `klaro-config.js`
+- `cmp-config.js`
 - `klaro.css`
 - `klaro.js`
 
@@ -63,7 +63,7 @@ At the top of the page, inside `<head>`:
 At the bottom of the page, before `</body>`:
 
 ```html
-<script src="/cmp/klaro-config.js"></script>
+<script src="/cmp/cmp-config.js"></script>
 <script src="/cmp/klaro.js" defer></script>
 ```
 
@@ -144,7 +144,7 @@ Behavior by integration:
   - After consent, embeds are recreated on `youtube-nocookie.com`.
   - On revoke, embeds are removed and placeholders are restored.
 
-Your `klaro-config.js` should also define cookie cleanup lists for the services you enable, so consent revoke removes their first-party cookies.
+Your `cmp-config.js` should also define cookie cleanup lists for the services you enable, so consent revoke removes their first-party cookies.
 For Microsoft Clarity, include `_clck` and `_clsk`.
 For ActiveCampaign Site Tracking, include `ac_enable_tracking`.
 
@@ -164,7 +164,7 @@ Typical page flow:
   - include `cmp.css`
   - include `cmp-bootstrap.js` with the tag IDs you want to enable
 - Bottom of page:
-  - include `klaro-config.js`
+  - include `cmp-config.js`
   - include `klaro.js` with `defer`
 
 For arbitrary third-party scripts, use Klaro's built-in blocked-script markup instead of adding a new `data-*` attribute to `cmp-bootstrap.js`.
@@ -179,7 +179,7 @@ Keep the script in your HTML, but convert it to the consent-gated form:
 ></script>
 ```
 
-`data-name` must match a Klaro service in `klaro-config.js`. Short example:
+`data-name` must match a Klaro service in `cmp-config.js`. Short example:
 
 ```js
 {
